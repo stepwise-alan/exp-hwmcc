@@ -175,4 +175,4 @@ clean:
 
 .SECONDARY: $(converted_rules_files) $(converted_smt2_files)
 .DELETE_ON_ERROR:
-.PHONY: rules smt2 convert flatten all clean echo
+.PHONY: rules smt2 convert flatten all clean

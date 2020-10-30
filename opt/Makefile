@@ -26,4 +26,3 @@ clean:
 .SECONDARY: downloads/hwmcc20benchmarks.tar.xz
 .DELETE_ON_ERROR:
 .PHONY: download extract all clean
-
