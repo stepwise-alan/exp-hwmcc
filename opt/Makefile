@@ -11,8 +11,8 @@ download: downloads/hwmcc20benchmarks.tar.xz
 
 extract: original/hwmcc20
 
-all: extract
-	$(MAKE) -f main.mk all
+rules smt2 convert flatten all: extract
+	$(MAKE) -f main.mk $@
 
 clean:
 	$(MAKE) -f main.mk clean
@@ -20,9 +20,6 @@ clean:
 
 .DEFAULT_GOAL := all
 
-%::
-	$(MAKE) -f main.mk $@
-
 .SECONDARY: downloads/hwmcc20benchmarks.tar.xz
 .DELETE_ON_ERROR:
-.PHONY: download extract all clean
+.PHONY: download extract rules smt2 convert flatten all clean

@@ -7,23 +7,27 @@ PYTHON ?= python3
 #PROGS ?= ../bin/z3m ../bin/gspacer
 #TIMEOUTS ?= 900 3600
 
-converted/ ../data/:
-	mkdir $@
 
-converted/rules/ converted/smt2/: | converted/
-	mkdir $@
+# BUILD is initially undefined
+ifndef BUILD
 
-../data/rules/ ../data/smt2/: | ../data/
-	mkdir $@
+# max equals 256 x's
+sixteen := x x x x x x x x x x x x x x x x
+MAX := $(foreach x,$(sixteen),$(sixteen))
 
-../data/rules/hwmcc20/: | ../data/rules/
-	mkdir $@
+# T estimates how many targets we are building by replacing BUILD with a special string
+T := $(shell $(MAKE) -nrRf $(firstword $(MAKEFILE_LIST)) $(MAKECMDGOALS) \
+            BUILD="COUNTTHIS" | grep -c "COUNTTHIS")
 
-../data/smt2/hwmcc20/: | ../data/smt2/
-	mkdir $@
+# N is the number of pending targets in base 1, well in fact, base x :-)
+N := $(wordlist 1,$T,$(MAX))
 
-../run/lists/: | ../run/
-	mkdir $@
+# auto-decrementing counter that returns the number of pending targets in base 10
+counter = $(words $N)$(eval N := $(wordlist 2,$(words $N),$N))
+
+# BUILD is now defined to show the progress, this also avoids redefining T in loop
+BUILD = @echo $(counter) of $(T)
+endif
 
 
 list-rem = $(wordlist 2,$(words $1),$1)
@@ -51,11 +55,11 @@ converted_smt2_files := $(converted_smt2_files_1) $(converted_smt2_files_2)
 
 converted_hwmcc20_bv_rules_files := \
 	$(filter converted/rules/hwmcc20/btor2/bv/%,$(converted_rules_files))
-converted_hwmcc20_array_rules_files := \
-	$(filter converted/rules/hwmcc20/btor2/array/%,$(converted_rules_files))
-
 converted_hwmcc20_bv_smt2_files := \
 	$(filter converted/smt2/hwmcc20/btor2/bv/%,$(converted_smt2_files))
+
+converted_hwmcc20_array_rules_files := \
+	$(filter converted/rules/hwmcc20/btor2/array/%,$(converted_rules_files))
 converted_hwmcc20_array_smt2_files := \
 	$(filter converted/smt2/hwmcc20/btor2/array/%,$(converted_smt2_files))
 
@@ -66,40 +70,60 @@ converted_hwmcc20_smt2_files := \
 
 hwmcc20_bv_rules_files := \
 	$(addprefix ../data/rules/hwmcc20/bv-,$(notdir $(converted_hwmcc20_bv_rules_files)))
-hwmcc20_array_rules_files := \
-	$(addprefix ../data/rules/hwmcc20/array-,$(notdir $(converted_hwmcc20_array_rules_files)))
 hwmcc20_bv_smt2_files := \
 	$(addprefix ../data/smt2/hwmcc20/bv-,$(notdir $(converted_hwmcc20_bv_smt2_files)))
+
+hwmcc20_array_rules_files := \
+	$(addprefix ../data/rules/hwmcc20/array-,$(notdir $(converted_hwmcc20_array_rules_files)))
 hwmcc20_array_smt2_files := \
 	$(addprefix ../data/smt2/hwmcc20/array-,$(notdir $(converted_hwmcc20_array_smt2_files)))
 
-hwmcc20_rules_files := $(hwmcc20_bv_rules_files) $(hwmcc20_array_rules_files)
-hwmcc20_smt2_files := $(hwmcc20_bv_smt2_files) $(hwmcc20_array_smt2_files)
+flattened_hwmcc20_rules_files := $(hwmcc20_bv_rules_files) $(hwmcc20_array_rules_files)
+flattened_hwmcc20_smt2_files := $(hwmcc20_bv_smt2_files) $(hwmcc20_array_smt2_files)
+
+converted/. ../data/.:
+	mkdir $(dir $@)
+
+converted/rules/. converted/smt2/.:
+	mkdir $(dir $@)
+
+../data/rules/. ../data/smt2/.: | ../data/.
+	mkdir $(dir $@)
+
+../data/rules/hwmcc20/.: ../data/rules/.
+	mkdir $(dir $@)
+
+../data/smt2/hwmcc20/.: ../data/smt2/.
+	mkdir $(dir $@)
+
+.SECONDEXPANSION:
+
+converted/rules/%/.: original/%
+	mkdir -p $(dir $@)
+
+converted/smt2/%/.: original/%
+	mkdir -p $(dir $@)
 
 $(converted_rules_files_1): converted/rules/%.smt2: original/%.btor \
-		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | converted/rules/
-	mkdir -p $(dir $@)
+		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | $$(@D)/.
 	PYTHONPATH=$(CHC_TOOLS) $(PYTHON) -m chctools.btor2 "$<" -fmt rules -o "$@"
 
 $(converted_rules_files_2): converted/rules/%.smt2: original/%.btor2 \
-		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | converted/rules/
-	mkdir -p $(dir $@)
+		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | $$(@D)/.
 	PYTHONPATH=$(CHC_TOOLS) $(PYTHON) -m chctools.btor2 "$<" -fmt rules -o "$@"
 
 $(converted_smt2_files_1): converted/smt2/%.smt2: original/%.btor \
-		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | converted/rules/
-	mkdir -p $(dir $@)
+		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | $$(@D)/.
 	PYTHONPATH=$(CHC_TOOLS) $(PYTHON) -m chctools.btor2 "$<" -fmt smt -o "$@"
 
 $(converted_smt2_files_2): converted/smt2/%.smt2: original/%.btor2 \
-		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | converted/rules/
-	mkdir -p $(dir $@)
+		$(CHC_TOOLS)/chctools/ $(CHC_TOOLS)/chctools/btor2.py | $$(@D)/.
 	PYTHONPATH=$(CHC_TOOLS) $(PYTHON) -m chctools.btor2 "$<" -fmt smt -o "$@"
 
-cp-rule = $(eval $(1): $(2) | $(dir $(1)); cp $$< $$@)
+cp-rule = $(eval $(1): $(2) | $(dir $(1)).; cp $$< $$@)
 
-$(eval $(call pairmap,cp-rule,$(hwmcc20_rules_files),$(converted_hwmcc20_rules_files)))
-$(eval $(call pairmap,cp-rule,$(hwmcc20_smt2_files),$(converted_hwmcc20_smt2_files)))
+$(eval $(call pairmap,cp-rule,$(flattened_hwmcc20_rules_files),$(converted_hwmcc20_rules_files)))
+$(eval $(call pairmap,cp-rule,$(flattened_hwmcc20_smt2_files),$(converted_hwmcc20_smt2_files)))
 
 #lists := ../run/lists/hwmcc20-rules.txt ../run/lists/hwmcc20-smt2.txt
 
@@ -166,7 +190,7 @@ smt2: $(converted_smt2_files)
 
 convert: rules smt2
 
-flatten: $(hwmcc20_rules_files) $(hwmcc20_smt2_files)
+flatten: $(flattened_hwmcc20_rules_files) $(flattened_hwmcc20_smt2_files)
 
 all: flatten
 
