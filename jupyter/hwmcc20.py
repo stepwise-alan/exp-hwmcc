@@ -19,7 +19,7 @@ def get_results() -> pd.DataFrame:
                  "sat_count", "uns_count", "unk_count",
                  "low_bound", "high_bound", "avg_bound",
                  "low_real", "high_real", "avg_real",
-                 "low_time", "high_time" "avg_time",
+                 "low_time", "high_time", "avg_time",
                  "low_mem", "high_mem", "avg_mem"])
 
     with open(hwmcc20_csv_filename, newline="") as in_file:
